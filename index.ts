@@ -2,7 +2,10 @@ import "dotenv/config";
 import { client } from "./client";
 import * as path from "path";
 import * as fs from "fs";
-import { Message } from "discord.js";
+import { Message, TextChannel, NewsChannel, ThreadChannel } from "discord.js";
+import cron from "node-cron";
+import { GoogleSheetsService } from "./services/sheets";
+import * as dayjs from "dayjs";
 
 const TOKEN = process.env.BOT_TOKEN;
 if (!TOKEN) {
@@ -37,6 +40,53 @@ for (const file of commandFiles) {
 
 client.on("ready", () => {
   console.log(`Bot đã đăng nhập với tên ${client.user?.tag}`);
+
+  cron.schedule("0 12 * * *", async () => {
+    const dateNow = dayjs().format("D/MM/YYYY");
+    const sheetsInstance = new GoogleSheetsService().init();
+    const data = await sheetsInstance.getAllData();
+    const itemsHandle = data.filter(
+      (item) => item["END TIME"] === dateNow && item.STATUS === "PENDING"
+    );
+
+    if (itemsHandle.length > 0) {
+      for (const item of itemsHandle) {
+        const channel = client.channels.cache.get(item.CHAT_ID);
+
+        try {
+          let msg = "";
+          if (item.ACCOUNT !== "") {
+            msg += `*Đến hẹn lại lên*\n\nRow:${item.ROW}\nTài khoản:${
+              item.ACCOUNT
+            }\nNgười trả góp:${item.NAME}\nThời gian:${
+              item.startTime
+                ? `${item["START TIME"]} - ${item["END TIME"]}`
+                : `${item["END TIME"]}`
+            }\nGiá:${item["GIÁ"]}\nĐã trả:${item["ĐÃ TRẢ"]}\nCòn thiếu:${
+              item["CÒN THIẾU"]
+            }\nGhi chú:${item.NOTES}`;
+          } else {
+            msg += `\n\nRow:${item.ROW}\nThời gian:${item["END TIME"]}\Ghi chú:${item.NOTES}`;
+          }
+
+          await sheetsInstance.updateDataBasedOnColumn({
+            ...item,
+            STATUS: "SUCCESSED",
+          });
+          if (
+            channel &&
+            (channel instanceof TextChannel ||
+              channel instanceof NewsChannel ||
+              channel instanceof ThreadChannel)
+          ) {
+            channel.send(msg);
+          } else {
+            console.error("Channel không phải dạng có thể gửi tin nhắn");
+          }
+        } catch (error) {}
+      }
+    }
+  });
 });
 
 client.on("messageCreate", async (message) => {

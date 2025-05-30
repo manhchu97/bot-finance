@@ -17,7 +17,9 @@ export const command = {
     const messageArray = text.split("\n") || [];
     const obj = mappingArrayMsgToObj(messageArray, LIST_ACTION.REMINDER);
     if (!obj) return message.reply("Data không hợp lệ !!!");
-    const response = await sheets.insertData([{ ...obj }]);
+    const response = await sheets.insertData([
+      { ...obj, CHAT_ID: message.channelId },
+    ]);
     let reply = "";
     if (response.success) {
       reply = "Thêm thành công !";
