@@ -4,6 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
+    "dayjs": "^1.11.18",
     "discord.js": "^14.19.3",
     "dotenv": "^16.5.0",
     "googleapis": "^149.0.0",

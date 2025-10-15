@@ -3,7 +3,7 @@ import path from "path";
 
 const credentialsPath = path.resolve(
   __dirname,
-  "./../regal-crowbar-319804-4fd58138c360.json"
+  "./../regal-crowbar-319804-45dc62936413.json"
 );
 const spreadsheetId = process.env.SHEET_TOKEN || "";
 
