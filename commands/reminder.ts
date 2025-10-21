@@ -11,7 +11,7 @@ export const command = {
   name: "reminder",
   description: "Thêm reminder",
 
-  execute: async (message: Message) => {
+  execute: async (message: Message, channel: string) => {
     const sheets = new GoogleSheetsService().init();
     const text = message.content;
     const messageArray = text.split("\n") || [];
@@ -19,7 +19,7 @@ export const command = {
     if (!obj) return message.reply("Data không hợp lệ !!!");
     const response = await sheets.insertData([
       { ...obj, CHAT_ID: message.channelId },
-    ]);
+    ], channel);
     let reply = "";
     if (response.success) {
       reply = "Thêm thành công !";

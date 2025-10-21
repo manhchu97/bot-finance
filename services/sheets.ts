@@ -48,14 +48,14 @@ export class GoogleSheetsService {
     return this.spreadsheetId;
   }
 
-  async getHeaderRow(range = "Sheet1!A1:Z1"): Promise<string[]> {
+  async getHeaderRow(sheetName = "Sheet1"): Promise<string[]> {
     if (!this.sheets) {
       throw new Error("Google Sheets API not initialized. Call init() first.");
     }
 
     const response = await this.sheets.spreadsheets.values.get({
       spreadsheetId: this.spreadsheetId,
-      range,
+      range: `${sheetName}!A1:Z1`,
     });
 
     const headerRow = response.data.values ? response.data.values[0] : [];
@@ -73,21 +73,25 @@ export class GoogleSheetsService {
    */
   async insertData(
     data: SheetDataItem[],
-    range = "Sheet1!A1"
+    sheetName = "Sheet1"
   ): Promise<{ success: boolean }> {
     if (!this.sheets) {
       throw new Error("Google Sheets API not initialized. Call init() first.");
     }
 
     try {
-      const headers = await this.getHeaderRow();
+      const headers = await this.getHeaderRow(sheetName);
+
+      console.log(headers,'headers')
       const values = data.map((item) =>
         headers.map((header) => item[header] || "")
       );
 
+      console.log(values)
+
       await this.sheets.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
-        range,
+        range: `${sheetName}!A1`,
         valueInputOption: "USER_ENTERED",
         requestBody: { values },
       });
@@ -99,7 +103,7 @@ export class GoogleSheetsService {
     }
   }
 
-  async updateDataBasedOnColumn(item: SheetDataItem): Promise<void> {
+  async updateDataBasedOnColumn(item: SheetDataItem,sheetName:string): Promise<void> {
     if (!this.sheets) {
       throw new Error("Google Sheets API not initialized. Call init() first.");
     }
@@ -109,7 +113,7 @@ export class GoogleSheetsService {
       if (!row) throw new Error("ROW number is required for update.");
 
       // Define range assuming columns A to L
-      const range = `Sheet1!A${row}:L${row}`;
+      const range = `${sheetName}!A${row}:L${row}`;
 
       const values = [
         [
@@ -140,18 +144,36 @@ export class GoogleSheetsService {
 
   /**
    * Retrieve all data from the specified sheet.
-   * @param range Sheet name and range (e.g., 'Sheet1!A1:Z')
+   * @param sheetName Optional name of the sheet (e.g., "FreeFire")
+   * @param range Optional cell range (default "A1:Z")
    * @returns Array of data objects
    */
-  async getAllData(range = "Sheet1!A1:Z"): Promise<SheetDataItem[]> {
+  async getAllData(
+    sheetName: string = "Sheet1",
+    range: string = "A1:Z"
+  ): Promise<SheetDataItem[]> {
     if (!this.sheets) {
       throw new Error("Google Sheets API not initialized. Call init() first.");
     }
 
     try {
+      // ✅ Lấy danh sách tất cả các sheet trong spreadsheet
+      const spreadsheet = await this.sheets.spreadsheets.get({
+        spreadsheetId: this.spreadsheetId,
+      });
+
+      const sheets = spreadsheet.data.sheets?.map((s) => s.properties?.title) || [];
+
+      // ✅ Kiểm tra xem sheetName có tồn tại không
+      if (!sheets.includes(sheetName)) {
+        console.warn(`Sheet "${sheetName}" not found in spreadsheet.`);
+        return [];
+      }
+
+      const fullRange = `${sheetName}!${range}`;
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
-        range,
+        range: fullRange,
       });
 
       const rows = response.data.values;
@@ -166,6 +188,7 @@ export class GoogleSheetsService {
           return dataObject;
         });
       }
+
       return [];
     } catch (error) {
       console.error("Error retrieving data:", error);

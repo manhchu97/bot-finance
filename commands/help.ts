@@ -5,7 +5,7 @@ export const command = {
   name: "help",
   description: "Hiển thị danh sách lệnh",
 
-  execute: async (message: Message) => {
+  execute: async (message: Message,channel:string) => {
     let msg = "";
     msg = `Dưới đây là hướng dẫn bạn sử dụng các tính năng của chatbot Reminder:\n`;
     msg += `\n\n*Để thông báo đến hạn trả góp nhập:*\n/reminder\n${KEYWORDS.ACCOUNT}\nNgười trả góp:\nThời gian:\nVốn:\nGiá:\nĐã trả:\nCòn thiếu:\nGhi chú:\nStatus: SUCCESSED`;

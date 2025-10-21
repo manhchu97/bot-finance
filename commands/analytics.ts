@@ -6,9 +6,9 @@ export const command = {
   name: "analytics",
   description: "Analytics !",
 
-  execute: async (message: Message) => {
+  execute: async (message: Message,channel:string) => {
     const sheets = new GoogleSheetsService().init();
-    const data: any = await sheets.getAllData();
+    const data: any = await sheets.getAllData(channel);
     const totalCapital = data.reduce((total, item) => {
       // Kiểm tra và chuyển giá trị VỐN thành số
       const capital = +item["VỐN"] || 0;

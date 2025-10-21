@@ -19,7 +19,7 @@ const commands = new Map<
   {
     name: string;
     description: string;
-    execute: (message: Message, args: string[]) => Promise<void>;
+    execute: (message: Message, channel: string) => Promise<void>;
   }
 >();
 
@@ -42,6 +42,7 @@ client.on("ready", () => {
   console.log(`Bot đã đăng nhập với tên ${client.user?.tag}`);
 
   cron.schedule("0 12 * * *", async () => {
+    const sheet = 'valorant'
     const dateNow = dayjs().format("D/MM/YYYY");
     const sheetsInstance = new GoogleSheetsService().init();
     const data = await sheetsInstance.getAllData();
@@ -56,15 +57,12 @@ client.on("ready", () => {
         try {
           let msg = "";
           if (item.ACCOUNT !== "") {
-            msg += `*Đến hẹn lại lên*\n\nRow:${item.ROW}\nTài khoản:${
-              item.ACCOUNT
-            }\nNgười trả góp:${item.NAME}\nThời gian:${
-              item.startTime
+            msg += `*Đến hẹn lại lên*\n\nRow:${item.ROW}\nTài khoản:${item.ACCOUNT
+              }\nNgười trả góp:${item.NAME}\nThời gian:${item.startTime
                 ? `${item["START TIME"]} - ${item["END TIME"]}`
                 : `${item["END TIME"]}`
-            }\nGiá:${item["GIÁ"]}\nĐã trả:${item["ĐÃ TRẢ"]}\nCòn thiếu:${
-              item["CÒN THIẾU"]
-            }\nGhi chú:${item.NOTES}`;
+              }\nGiá:${item["GIÁ"]}\nĐã trả:${item["ĐÃ TRẢ"]}\nCòn thiếu:${item["CÒN THIẾU"]
+              }\nGhi chú:${item.NOTES}`;
           } else {
             msg += `\n\nRow:${item.ROW}\nThời gian:${item["END TIME"]}\Ghi chú:${item.NOTES}`;
           }
@@ -72,7 +70,7 @@ client.on("ready", () => {
           await sheetsInstance.updateDataBasedOnColumn({
             ...item,
             STATUS: "SUCCESSED",
-          });
+          }, sheet);
           if (
             channel &&
             (channel instanceof TextChannel ||
@@ -83,14 +81,62 @@ client.on("ready", () => {
           } else {
             console.error("Channel không phải dạng có thể gửi tin nhắn");
           }
-        } catch (error) {}
+        } catch (error) { }
+      }
+    }
+  });
+
+
+  cron.schedule("0 12 * * *", async () => {
+    const sheet = 'freefire'
+    const dateNow = dayjs().format("D/MM/YYYY");
+    const sheetsInstance = new GoogleSheetsService().init();
+    const data = await sheetsInstance.getAllData();
+    const itemsHandle = data.filter(
+      (item) => item["END TIME"] === dateNow && item.STATUS === "PENDING"
+    );
+
+    if (itemsHandle.length > 0) {
+      for (const item of itemsHandle) {
+        const channel = client.channels.cache.get(item.CHAT_ID);
+
+        try {
+          let msg = "";
+          if (item.ACCOUNT !== "") {
+            msg += `*Đến hẹn lại lên*\n\nRow:${item.ROW}\nTài khoản:${item.ACCOUNT
+              }\nNgười trả góp:${item.NAME}\nThời gian:${item.startTime
+                ? `${item["START TIME"]} - ${item["END TIME"]}`
+                : `${item["END TIME"]}`
+              }\nGiá:${item["GIÁ"]}\nĐã trả:${item["ĐÃ TRẢ"]}\nCòn thiếu:${item["CÒN THIẾU"]
+              }\nGhi chú:${item.NOTES}`;
+          } else {
+            msg += `\n\nRow:${item.ROW}\nThời gian:${item["END TIME"]}\Ghi chú:${item.NOTES}`;
+          }
+
+          await sheetsInstance.updateDataBasedOnColumn({
+            ...item,
+            STATUS: "SUCCESSED",
+          }, sheet);
+          if (
+            channel &&
+            (channel instanceof TextChannel ||
+              channel instanceof NewsChannel ||
+              channel instanceof ThreadChannel)
+          ) {
+            channel.send(msg);
+          } else {
+            console.error("Channel không phải dạng có thể gửi tin nhắn");
+          }
+        } catch (error) { }
       }
     }
   });
 });
 
-client.on("messageCreate", async (message) => {
+client.on("messageCreate", async (message: any) => {
   if (message.author.bot) return;
+
+  const channel = message.channel.name
 
   if (!message.content.startsWith("/")) return;
 
@@ -106,7 +152,7 @@ client.on("messageCreate", async (message) => {
   }
 
   try {
-    await command.execute(message, args);
+    await command.execute(message, channel);
   } catch (error) {
     console.error("Lỗi khi chạy lệnh:", error);
     await message.reply("Đã xảy ra lỗi khi thực hiện lệnh.");

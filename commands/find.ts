@@ -6,12 +6,12 @@ export const command = {
   name: "find",
   description: "Tìm keyword !",
 
-  execute: async (message: Message) => {
+  execute: async (message: Message,channel:string) => {
     const sheets = new GoogleSheetsService().init();
     let msg = "";
     const text = message.content;
     const messageArray = text.split("\n") || [];
-    const allData = await sheets.getAllData();
+    const allData = await sheets.getAllData(channel);
     const list: any[] = [];
     const keyword = findByKey(messageArray, KEYWORDS.KEYWORD);
     const fieldSearch = ["ACCOUNT", "NAME", "START TIME", "END TIME", "NOTES"];

@@ -11,11 +11,11 @@ export const command = {
   name: "update",
   description: "Update",
 
-  execute: async (message: Message) => {
+  execute: async (message: Message,channel:string) => {
     const sheets = new GoogleSheetsService().init();
     const text = message.content;
     let reply = "";
-    const allData: any[] = await sheets.getAllData();
+    const allData: any[] = await sheets.getAllData(channel);
     const messageArray = text.split("\n") || [];
     const row = findByKey(messageArray, KEYWORDS.ROW);
     const detail = allData.find((item) => +item.ROW === +row);
@@ -27,7 +27,7 @@ export const command = {
     if (!detail) {
       reply = `Không tìm thấy bản ghi`;
     }
-    await sheets.updateDataBasedOnColumn(obj);
+    await sheets.updateDataBasedOnColumn(obj,channel);
     reply = `Update thành công !`;
 
     await message.reply(reply);
